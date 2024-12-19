@@ -4,7 +4,18 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"os"
 )
+
+// Funzione per caricare il template da una cartella
+func getTemplatePath(filename string) string  {
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	return cwd + "/" + filename
+}
+
 
 // Struttura per rappresentare la lattina
 type MonsterCan struct {
@@ -24,47 +35,9 @@ func main()  {
 
 	// Gestire la route per la home page
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Carica il template HTML
-		tmpl, err := template.New("index").Parse(`
-		<!DOCTYPE html>
-			<html lang="it">
-			<head>
-				<meta charset="UTF-8">
-				<title>Collezione Lattine di Monster</title>
-				<style>
-					body {
-						font-family: Arial, sans-serif;
-					}
-					.container {
-						display: flex;
-						flex-wrap: wrap;
-					}
-					.item {
-						margin: 10px;
-						width: 200px;
-					}
-					img {
-						width: 100%;
-						height: auto;
-					}
-				</style>
-			</head>
-			<body>
-				<h1>Collezione Lattine di Monster</h1>
-				<div class="container">
-					{{range .}}
-					<div class="item">
-						<h2>{{.Name}}</h2>
-						<p><strong>Gusto:</strong> {{.Flavor}}</p>
-						<img src="{{.Image}}" alt="{{.Name}}">
-						<p><strong>Codice a Barre:</strong> {{.Barcode}}</p>
-					</div>
-					{{end}}
-				</div>
-			</body>
-			</html>
-			`)
-
+		// Carica il template HTML da file con percorso completo
+		tmplPath := getTemplatePath("index.html")
+		tmpl, err := template.ParseFiles(tmplPath)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
