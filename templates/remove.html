@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Rimuovi una lattina</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Rimuovi una lattina</h1>
+    <form action="/remove" method="post">
+        <label for="barcode">Codice a barre:</label><br>
+        <input type="text" id="barcode" name="barcode" required><br><br>
+
+        <input type="submit" value="Rimuovi">
+    </form>
+</body>
+
+</html>

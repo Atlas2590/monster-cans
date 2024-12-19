@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Aggiungi una lattina</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Aggiungi una nuova lattina</h1>
+    <form action="/add" method="post">
+        <label for="name">Nome:</label><br>
+        <input type="text" id="name" name="name" required><br><br>
+
+        <label for="flavor">Gusto:</label><br>
+        <input type="text" id="flavor" name="flavor" required><br><br>
+
+        <label for="image">Immagine URL:</label><br>
+        <input type="text" id="image" name="image" required><br><br>
+
+        <label for="barcode">Codice a barre:</label><br>
+        <input type="text" id="barcode" name="barcode" required><br><br>
+
+        <input type="submit" value="Aggiungi">
+    </form>
+</body>
+
+</html>
