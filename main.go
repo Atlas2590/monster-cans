@@ -11,14 +11,15 @@ type MonsterCan struct {
 	Name string
 	Flavor string
 	Image string
+	Barcode string
 }
 
 func main()  {
 	// Lista di lattine di Monster
 	cans := []MonsterCan{
-		{"Monster Energy", "Original", "image.jpg"},
-		{"Monster Ultra", "Zero Sugar", "image.jpg"},
-		{"Monster Mango Loco", "Mango", "image.jpg"},
+		{"Monster Energy", "Original", "image.jpg", "123456789"},
+		{"Monster Ultra", "Zero Sugar", "image.jpg", "123456789"},
+		{"Monster Mango Loco", "Mango", "image.jpg", "123456789"},
 	}
 
 	// Gestire la route per la home page
@@ -56,6 +57,7 @@ func main()  {
 						<h2>{{.Name}}</h2>
 						<p><strong>Gusto:</strong> {{.Flavor}}</p>
 						<img src="{{.Image}}" alt="{{.Name}}">
+						<p><strong>Codice a Barre:</strong> {{.Barcode}}</p>
 					</div>
 					{{end}}
 				</div>
