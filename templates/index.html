@@ -7,6 +7,12 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
         }
 
         .container {
@@ -17,19 +23,49 @@
         .item {
             margin: 10px;
             width: 200px;
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
         img {
             width: 100%;
             height: auto;
+            border-radius: 8px;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
         }
     </style>
 </head>
 
 <body>
     <h1>Collezione Lattine di Monster</h1>
+
+    {{if .SuccessMessage}}
+    <div class="message success">{{.SuccessMessage}}</div>
+    {{end}}
+
+    {{if .ErrorMessage}}
+    <div class="message error">{{.ErrorMessage}}</div>
+    {{end}}
+
     <div class="container">
-        {{range .}}
+        {{range .Cans}}
         <div class="item">
             <h2>{{.Name}}</h2>
             <p><strong>Gusto:</strong> {{.Flavor}}</p>

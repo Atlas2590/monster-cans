@@ -7,12 +7,66 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        form {
+            max-width: 400px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
         }
     </style>
 </head>
 
 <body>
     <h1>Aggiungi una nuova lattina</h1>
+
+    {{if .SuccessMessage}}
+    <div class="message success">{{.SuccessMessage}}</div>
+    {{end}}
+
+    {{if .ErrorMessage}}
+    <div class="message error">{{.ErrorMessage}}</div>
+    {{end}}
+
+
     <form action="/add" method="post">
         <label for="name">Nome:</label><br>
         <input type="text" id="name" name="name" required><br><br>
@@ -20,8 +74,8 @@
         <label for="flavor">Gusto:</label><br>
         <input type="text" id="flavor" name="flavor" required><br><br>
 
-        <label for="image">Immagine URL:</label><br>
-        <input type="text" id="image" name="image" required><br><br>
+        <label for="image">Immagine (upload):</label><br>
+        <input type="file" id="image" name="image" accept="image/*"><br><br>
 
         <label for="barcode">Codice a barre:</label><br>
         <input type="text" id="barcode" name="barcode" required><br><br>

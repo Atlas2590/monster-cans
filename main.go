@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,6 +17,14 @@ type MonsterCan struct {
 	Image string
 	Barcode string
 }
+
+// Struttura per passare i dati al template
+type PageData struct {
+    Cans          []MonsterCan
+    SuccessMessage string
+	ErrorMessage string
+}
+
 
 
 func getTemplatePath(templateName string) string  {
@@ -68,24 +77,38 @@ func saveCans(cans []MonsterCan) error  {
 // Gestione della rotta per la homepage
 	func homeHandler(w http.ResponseWriter, r *http.Request) {
 		cans, err := loadCans()
+		var pageData PageData
 		if err != nil {
-			http.Error(w, "Errore nel caricare i dati", http.StatusInternalServerError)
-			return
+			pageData.ErrorMessage = "Errore nel caricare i dati"
+		} else {
+			// Se non c'è errore, carica il template
+			pageData.Cans = cans
+			pageData.SuccessMessage = "L'operazione è stata completata con successo!"
 		}
+			// http.Error(w, "Errore nel caricare i dati", http.StatusInternalServerError)
+			// return
+		// }
 
+		// Crea un oggetto PageData con il messaggio di successo
+		// pageData := PageData{
+			// Cans: cans,
+			// SuccessMessage: "L'operazione è stata completata con successo",
+		// }
 
 		// Carica il template HTML da file con percorso completo
 		// tmplPath := getTemplatePath("index.html")
 		tmpl, err := template.ParseFiles("templates/index.html")
 			if err != nil {
-				http.Error(w, "Errore nel caricare il template: "+err.Error(), http.StatusInternalServerError)
-				return
+				pageData.ErrorMessage = "Errore nel caricare il template: " + err.Error()
+				// http.Error(w, "Errore nel caricare il template: "+err.Error(), http.StatusInternalServerError)
+				// return
 			}
 
 			//Esegui il template con i dati delle lattine
-			err = tmpl.Execute(w, cans)
+			err = tmpl.Execute(w, pageData)
 			if err != nil {
-				http.Error(w, "Errore nell'esecuzione del template: "+err.Error(), http.StatusInternalServerError)
+				pageData.ErrorMessage = "Errore nell'esecuzione del template: " + err.Error()
+				// http.Error(w, "Errore nell'esecuzione del template: "+err.Error(), http.StatusInternalServerError)
 			}
 	}
 
@@ -95,8 +118,30 @@ func saveCans(cans []MonsterCan) error  {
 			// Estrai i dati dal form
 			name := r.FormValue("name")
 			flavor := r.FormValue("flavor")
-			image := r.FormValue("image")
 			barcode := r.FormValue("barcode")
+			image, _, err := r.FormFile("image")
+			if err != nil && err.Error() != "http: no such file" {
+				http.Error(w, "Errore nell'upload dell'immagine", http.StatusInternalServerError)
+				return
+			}
+
+			// Salva l'immagine (se presente)
+			var imagePath string
+			if image != nil {
+				// Salva l'immagine nella cartella static/images
+				imagePath = "static/images/" + barcode + ".jpg"
+				dst, err := os.Create(imagePath)
+				if err != nil {
+					http.Error(w, "Errore nel salvare l'immagine", http.StatusInternalServerError)
+					return
+				}
+				defer dst.Close()
+				_, err = io.Copy(dst, image)
+				if err != nil {
+					http.Error(w, "Errore nel copiare l'immagine", http.StatusInternalServerError)
+					return
+				}
+			}
 
 			// Carica lattine esistenti
 			cans, err := loadCans()
@@ -106,7 +151,7 @@ func saveCans(cans []MonsterCan) error  {
 			}
 
 			// Aggiungi nuova lattina
-			newCan := MonsterCan{Name: name, Flavor: flavor, Image: image, Barcode: barcode}
+			newCan := MonsterCan{Name: name, Flavor: flavor, Image: imagePath, Barcode: barcode}
 			cans = append(cans, newCan)
 
 			// Salva di nuovo nel file JSON
