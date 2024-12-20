@@ -11,6 +11,12 @@
             padding: 20px;
         }
 
+        video {
+            width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+        }
+
         h1 {
             color: #333;
         }
@@ -53,6 +59,7 @@
             color: #721c24;
         }
     </style>
+    <script src="https://unpkg.com/@zxing/library@0.18.6/dist/index.min.js"></script>
 </head>
 
 <body>
@@ -82,6 +89,34 @@
 
         <input type="submit" value="Aggiungi">
     </form>
+
+    <h2>Scansiona il codice a barre</h2>
+    <video id="barcode-video" width="320" height="240" style="border: 1px solid #ccc;"></video>
+    <br><br>
+    <button id="start.scan">Avvia scansione</button>
+
+    <script>
+        // Inizializzazione della libreria zxing per la scansione del codice a barre
+        const codeReader = new ZXing.BrowserBarcodeReader();
+        let videoElement = document.getElementById('barcode-video');
+
+        document.getElementById('start-scan').addEventListener('click', function () {
+            codeReader
+                .decodeFromVideoDevice(null, videoElement, (result, err) => {
+                    if (result) {
+                        // Impostiamo il valore del codice a barre nel campo del modulo
+                        document.getElementById('barcode').value = result.text;
+                        alert("Codice a barre scansionato: " + result.text);
+                    }
+                    if (err) {
+                        console.error(err);
+                    }
+                })
+                .catch(err => {
+                    console.error("Errore nella scansione: ", err);
+                });
+        });
+    </script>
 </body>
 
 </html>
