@@ -50,6 +50,23 @@
             background-color: #f8d7da;
             color: #721c24;
         }
+
+        .button-container {
+            margin-bottom: 20px;
+        }
+
+        .button-container a {
+            padding: 10px 15px;
+            background-color: #4caf50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        .button-container a:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 
@@ -64,6 +81,13 @@
     <div class="message error">{{.ErrorMessage}}</div>
     {{end}}
 
+    <!-- Aggiungi pulsanti per navigare alle pagine add e remove-->
+    <div class="button-container">
+        <a href="/add">Aggiungi una lattina</a>
+        <a href="/remove">Rimuovi una lattina</a>
+    </div>
+
+    <!-- Lista delle lattine-->
     <div class="container">
         {{range .Cans}}
         <div class="item">
