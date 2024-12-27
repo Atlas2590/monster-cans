@@ -11,10 +11,10 @@
             padding: 20px;
         }
 
-        #scanner-container {
+        video {
             width: 100%;
-            height: 400px;
-            margin-bottom: 20px;
+            height: auto;
+            border: 1px solid #ccc;
         }
 
         h1 {
@@ -59,8 +59,7 @@
             color: #721c24;
         }
     </style>
-    <script src="https://unpkg.com/quagga@0.12.1/dist/quagga.min.js"></script>
-
+    <script src="https://unpkg.com/@zxing/library@0.18.6/dist/index.min.js"></script>
 </head>
 
 <body>
@@ -91,81 +90,32 @@
         <input type="submit" value="Aggiungi">
     </form>
 
-    <!-- Sezione per avviare la scansione del codice a barre -->
-    <button id="start-scan">Scansiona Barcode</button>
-    <div id="scanner-container"></div>
+    <h2>Scansiona il codice a barre</h2>
+    <video id="barcode-video" width="320" height="240" style="border: 1px solid #ccc;"></video>
+    <br><br>
+    <button id="start.scan">Avvia scansione</button>
 
     <script>
-        // Anteprima immagine
-        document.getElementById("image").onchange = function (event) {
-            var reader = new FileReader();
-            reader.onload = function () {
-                var image = document.createElement("img");
-                image.src = reader.result;
-                image.style.width = "100px";
-                document.body.appendChild(image);
-            };
-            reader.readAsDataURL(event.target.files[0]);
-        };
+        // Inizializzazione della libreria zxing per la scansione del codice a barre
+        const codeReader = new ZXing.BrowserBarcodeReader();
+        let videoElement = document.getElementById('barcode-video');
+
         document.getElementById('start-scan').addEventListener('click', function () {
-            startBarcodeScanner();
-        });
-
-        // Funzione per avviare la scansione del barcode
-        function startBarcodeScanner() {
-            const scannerContainer = document.getElementById('scanner-container');
-            scannerContainer.innerHTML = ''; // Pulisce il contenuto precedente
-
-            // Crea un elemento video per la fotocamera
-            const video = document.createElement('video');
-            scannerContainer.appendChild(video);
-
-            console.log('Tentativo di avvio della fotocamera...');
-
-            // Inizializza la fotocamera
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-                .then(function (stream) {
-                    console.log('Fotocamera avviata correttamente');
-                    video.srcObject = stream;
-                    video.play();
-
-                    // Inizializza QuaggaJS per il riconoscimento dei codici a barre
-                    Quagga.init({
-                        inputStream: {
-                            name: "Live",
-                            type: "LiveStream",
-                            target: video
-                        },
-                        decoder: {
-                            readers: ["code_128_reader", "ean_reader", "ean_8_reader", "upc_reader"] // Tipi di codici a barre supportati
-                        }
-                    }, function (err) {
-                        if (err) {
-                            console.error("Errore nell'inizializzazione di Quagga:", err);
-                            return;
-                        }
-
-                        Quagga.start();
-
-                        // Ascolta l'evento per la scansione
-                        Quagga.onDetected(function (result) {
-                            // Mostra il codice a barre scansionato nel campo del form
-                            document.getElementById('barcode').value = result.codeResult.code;
-
-                            // Pulisci il flusso video e fermalo
-                            stream.getTracks().forEach(track => track.stop());
-                            video.pause();
-                            video.srcObject = null;
-
-                            console.log("Codice a barre scansionato: ", result.codeResult.code);
-                        });
-                    });
+            codeReader
+                .decodeFromVideoDevice(null, videoElement, (result, err) => {
+                    if (result) {
+                        // Impostiamo il valore del codice a barre nel campo del modulo
+                        document.getElementById('barcode').value = result.text;
+                        alert("Codice a barre scansionato: " + result.text);
+                    }
+                    if (err) {
+                        console.error(err);
+                    }
                 })
-                .catch(function (err) {
-                    console.error("Errore nell'accesso alla fotocamera:", err);
-                    alert("Impossibile accedere alla fotocamera. Assicurati che il browser abbia il permesso.");
+                .catch(err => {
+                    console.error("Errore nella scansione: ", err);
                 });
-        }
+        });
     </script>
 </body>
 

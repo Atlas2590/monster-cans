@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -38,9 +37,7 @@ func getTemplatePath(templateName string) string  {
 	return filepath.Join(dirPath, "templates", templateName)
 }
 
-func redirectHandler(w http.ResponseWriter, r *http.Request) {
-    http.Redirect(w, r, "https://"+r.Host+r.URL.String(), http.StatusMovedPermanently)
-}
+
 
 // Carica lattine dal file JSON
 func loadCans() ([]MonsterCan, error)  {
@@ -248,29 +245,10 @@ func saveCans(cans []MonsterCan) error  {
 			
 			
 		
-		// // Avvia il server sulla porta 8080
-		// fmt.Println("Server in esecuzione su http://localhost:8080")
-		// err := http.ListenAndServe(":8080", nil)
-		// if err != nil {
-		// 	fmt.Println("Errore nell'avvio del server:", err)
-		// }
-
-		 // Redirige automaticamente tutto il traffico HTTP a HTTPS
-		 go func() {
-			fmt.Println("Server HTTP in esecuzione su http://localhost:80 (reindirizza a HTTPS)...")
-			err := http.ListenAndServe(":80", http.HandlerFunc(redirectHandler))  // Ascolta su porta 80
-			if err != nil {
-				log.Fatal("Errore nel server HTTP:", err)
-			}
-		}()
-	
-		// Gestisci le rotte
-		// http.HandleFunc("/", homeHandler)
-	
-		// Avvia il server HTTPS sulla porta 443
-		fmt.Println("Server HTTPS in esecuzione su https://localhost:443")
-		err := http.ListenAndServeTLS(":443", "cert.pem", "key.pem", nil)  // Usa il certificato e la chiave
+		// Avvia il server sulla porta 8080
+		fmt.Println("Server in esecuzione su http://localhost:8080")
+		err := http.ListenAndServe(":8080", nil)
 		if err != nil {
-			log.Fatal("Errore nell'avvio del server HTTPS:", err)
+			fmt.Println("Errore nell'avvio del server:", err)
 		}
 }
