@@ -1,254 +1,216 @@
 package main
 
 import (
-	"encoding/json"
+	"database/sql"
 	"fmt"
 	"html/template"
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // Struttura per rappresentare la lattina
 type MonsterCan struct {
-	Name string
-	Flavor string
-	Image string
-	Barcode string
+    Name    string
+    Flavor  string
+    Image   string
+    Barcode string
 }
 
 // Struttura per passare i dati al template
 type PageData struct {
-    Cans          []MonsterCan
+    Cans           []MonsterCan
     SuccessMessage string
-	ErrorMessage string
+    ErrorMessage   string
 }
 
+// Connessione al database SQLite
+func openDB() (*sql.DB, error) {
+    // Crea o apri il database SQLite
+    db, err := sql.Open("sqlite3", "./cans.db")
+    if err != nil {
+        return nil, err
+    }
 
-
-func getTemplatePath(templateName string) string  {
-	// Ottieni il percorso assoluto della directory corrente
-	exePath, err := os.Executable()
-	if err != nil {
-		panic("Errore nell'ottenere il percorso dell'eseguibile: " + err.Error())
-	}
-	dirPath := filepath.Dir(exePath)
-	return filepath.Join(dirPath, "templates", templateName)
+    // Crea la tabella "cans" se non esiste
+    createTableSQL := `
+    CREATE TABLE IF NOT EXISTS cans (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        flavor TEXT,
+        image TEXT,
+        barcode TEXT UNIQUE
+    );`
+    _, err = db.Exec(createTableSQL)
+    if err != nil {
+        return nil, err
+    }
+    return db, nil
 }
 
+// Carica lattine dal database
+func loadCans() ([]MonsterCan, error) {
+    db, err := openDB()
+    if err != nil {
+        return nil, err
+    }
+    defer db.Close()
 
+    rows, err := db.Query("SELECT name, flavor, image, barcode FROM cans")
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
 
-// Carica lattine dal file JSON
-func loadCans() ([]MonsterCan, error)  {
-	file, err := os.Open("cans.json")
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
+    var cans []MonsterCan
+    for rows.Next() {
+        var can MonsterCan
+        if err := rows.Scan(&can.Name, &can.Flavor, &can.Image, &can.Barcode); err != nil {
+            return nil, err
+        }
+        cans = append(cans, can)
+    }
 
-	var cans []MonsterCan
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&cans)
-	if err != nil {
-		return nil, err
-	}
-
-	return cans, nil
+    return cans, nil
 }
 
-// Salva lattine nel file JSON
-func saveCans(cans []MonsterCan) error  {
-	file, err := os.Create("cans.json")
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+// Aggiungi una lattina al database
+func saveCans(can MonsterCan) error {
+    db, err := openDB()
+    if err != nil {
+        return err
+    }
+    defer db.Close()
 
-	encoder := json.NewEncoder(file)
-	err = encoder.Encode(cans)
-	if err != nil {
-		return err
-	}
+    // Inserisci una nuova lattina
+    _, err = db.Exec("INSERT INTO cans (name, flavor, image, barcode) VALUES (?, ?, ?, ?)", can.Name, can.Flavor, can.Image, can.Barcode)
+    if err != nil {
+        return err
+    }
 
-	return nil
+    return nil
+}
+
+// Rimuovi una lattina dal database
+func removeCan(barcode string) error {
+    db, err := openDB()
+    if err != nil {
+        return err
+    }
+    defer db.Close()
+
+    _, err = db.Exec("DELETE FROM cans WHERE barcode = ?", barcode)
+    return err
 }
 
 // Gestione della rotta per la homepage
-	func homeHandler(w http.ResponseWriter, r *http.Request) {
-		cans, err := loadCans()
-		var pageData PageData
-		if err != nil {
-			pageData.ErrorMessage = "Errore nel caricare i dati"
-		} else {
-			// Se non c'è errore, carica il template
-			pageData.Cans = cans
-			pageData.SuccessMessage = "L'operazione è stata completata con successo!"
-		}
-			// http.Error(w, "Errore nel caricare i dati", http.StatusInternalServerError)
-			// return
-		// }
+func homeHandler(w http.ResponseWriter, r *http.Request) {
+    var pageData PageData
 
-		// Crea un oggetto PageData con il messaggio di successo
-		// pageData := PageData{
-			// Cans: cans,
-			// SuccessMessage: "L'operazione è stata completata con successo",
-		// }
+    // Rimuovi lattina se il form è stato inviato
+    if r.Method == http.MethodPost {
+        if barcode := r.FormValue("barcode"); barcode != "" {
+            err := removeCan(barcode)
+            if err != nil {
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+                return
+            }
+        }
+    }
+    // Carica lattine dal database
+    cans, err := loadCans()
+    if err != nil {
+        pageData.ErrorMessage = "Errore nel caricare i dati: " + err.Error()
+    } else {
+        pageData.Cans = cans
+    }
+    // Carica il template HTML
+    tmpl, err := template.ParseFiles("templates/index.html")
+    if err != nil {
+        pageData.ErrorMessage = "Errore nel caricare il template: " + err.Error()
+    }
 
-		// Carica il template HTML da file con percorso completo
-		// tmplPath := getTemplatePath("index.html")
-		tmpl, err := template.ParseFiles("templates/index.html")
-			if err != nil {
-				pageData.ErrorMessage = "Errore nel caricare il template: " + err.Error()
-				// http.Error(w, "Errore nel caricare il template: "+err.Error(), http.StatusInternalServerError)
-				// return
-			}
+    // Esegui il template con i dati delle lattine
+    err = tmpl.Execute(w, pageData)
+    if err != nil {
+        pageData.ErrorMessage = "Errore nell'esecuzione del template: " + err.Error()
+    }
+}
 
-			//Esegui il template con i dati delle lattine
-			err = tmpl.Execute(w, pageData)
-			if err != nil {
-				pageData.ErrorMessage = "Errore nell'esecuzione del template: " + err.Error()
-				// http.Error(w, "Errore nell'esecuzione del template: "+err.Error(), http.StatusInternalServerError)
-			}
-	}
+// Gestione della route per aggiungere una nuova lattina
+func addHandler(w http.ResponseWriter, r *http.Request) {
+    if r.Method == http.MethodPost {
+        // Estrai i dati dal form
+        name := r.FormValue("name")
+        flavor := r.FormValue("flavor")
+        barcode := r.FormValue("barcode")
+        image, _, err := r.FormFile("image")
+        if err != nil && err != http.ErrMissingFile {
+            http.Error(w, "Errore nell'upload dell'immagine", http.StatusInternalServerError)
+            return
+        }
 
-	// Gestione della route per aggiungere una nuova lattina
-	func addHandler(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			// Estrai i dati dal form
-			name := r.FormValue("name")
-			flavor := r.FormValue("flavor")
-			barcode := r.FormValue("barcode")
-			image, _, err := r.FormFile("image")
-			if err != nil && err.Error() != "http: no such file" {
-				http.Error(w, "Errore nell'upload dell'immagine", http.StatusInternalServerError)
-				return
-			}
+        // Salva l'immagine (se presente)
+        var imagePath string
+        if err == nil {
+            // Salva l'immagine nella cartella static/images
+            imagePath = "static/images/" + barcode + ".jpg"
+            dst, err := os.Create(imagePath)
+            if err != nil {
+                http.Error(w, "Errore nel salvare l'immagine", http.StatusInternalServerError)
+                return
+            }
+            defer dst.Close()
+            _, err = io.Copy(dst, image)
+            if err != nil {
+                http.Error(w, "Errore nel copiare l'immagine", http.StatusInternalServerError)
+                return
+            }
+        }
 
-			// Salva l'immagine (se presente)
-			var imagePath string
-			if image != nil {
-				// Salva l'immagine nella cartella static/images
-				imagePath = "static/images/" + barcode + ".jpg"
-				dst, err := os.Create(imagePath)
-				if err != nil {
-					http.Error(w, "Errore nel salvare l'immagine", http.StatusInternalServerError)
-					return
-				}
-				defer dst.Close()
-				_, err = io.Copy(dst, image)
-				if err != nil {
-					http.Error(w, "Errore nel copiare l'immagine", http.StatusInternalServerError)
-					return
-				}
-			}
+        // Aggiungi la lattina al database
+        newCan := MonsterCan{Name: name, Flavor: flavor, Image: imagePath, Barcode: barcode}
+        err = saveCans(newCan)
+        if err != nil {
+            http.Error(w, "Errore nel salvare i dati", http.StatusInternalServerError)
+            return
+        }
 
-			// Carica lattine esistenti
-			cans, err := loadCans()
-			if err != nil {
-				http.Error(w, "Errore nel caricare i dati", http.StatusInternalServerError)
-				return
-			}
+        // Redirect alla pagina principale dopo l'aggiunta
+        http.Redirect(w, r, "/", http.StatusSeeOther)
+        return
+    }
 
-			// Aggiungi nuova lattina
-			newCan := MonsterCan{Name: name, Flavor: flavor, Image: imagePath, Barcode: barcode}
-			cans = append(cans, newCan)
+    // Carica il template per il form di aggiunta
+    tmpl, err := template.ParseFiles("templates/add.html")
+    if err != nil {
+        http.Error(w, "Errore nel caricare il template: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-			// Salva di nuovo nel file JSON
-			err = saveCans(cans)
-			if err != nil {
-				http.Error(w, "Errore nel salvare i dati", http.StatusInternalServerError)
-				return
-			}
+    // Esegui il template
+    err = tmpl.Execute(w, nil)
+    if err != nil {
+        http.Error(w, "Errore nell'esecuzione del template: "+err.Error(), http.StatusInternalServerError)
+    }
+}
 
-			// Redirect alla pagina principale dopo l'aggiunta
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-			return
-		}
+func main() {
+    // Gestisci le rotte
+    http.HandleFunc("/", homeHandler)
+    http.HandleFunc("/add", addHandler)
+    // http.HandleFunc("/remove", removeHandler)
 
-		// Carica il template per il form di aggiunta
-		// tmplPath := getTemplatePath("add.html")
-		tmpl, err := template.ParseFiles("templates/add.html")
-		if err != nil {
-			http.Error(w, "Errore nel caricare il template: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
+    // Servi i file statici
+    fs := http.FileServer(http.Dir("static"))
+    http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-		// Esegui il template
-		err = tmpl.Execute(w, nil)
-		if err != nil {
-			http.Error(w, "Errore nell'esecuzione del template: "+err.Error(), http.StatusInternalServerError)
-		}
-	}
-
-	// Gestione della route per rimuovere una lattina
-	func removeHandler(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			barcode := r.FormValue("barcode")
-
-			
-			// Carica lattine esistenti
-			cans, err := loadCans()
-			if err != nil {
-				http.Error(w, "Errore nel caricare i dati", http.StatusInternalServerError)
-				return
-			}
-			
-			// Rimuovi la lattina con il codice a barre specificato
-			var newCans []MonsterCan
-			found := false
-			for _, can := range cans {
-				if can.Barcode != barcode {
-					newCans = append(newCans, can)
-					} else {
-						found = true
-					}
-				}
-				
-				if !found {
-					http.Error(w, "Lattina non trovata con il codice a barre: "+barcode, http.StatusInternalServerError)
-					return
-				}
-				
-				// Salva di nuovo nel file JSON
-				err = saveCans(newCans)
-				if err != nil {
-					http.Error(w, "Errore nel salvare i dati", http.StatusInternalServerError)
-					return
-				}
-				
-				// Redirect alla pagina principale dopo la rimozione
-				http.Redirect(w, r, "/", http.StatusSeeOther)
-				return
-			}
-			
-			// Carica il template HTML da file con percorso completo
-			// tmplPath := getTemplatePath("remove.html")
-			tmpl, err := template.ParseFiles("templates/remove.html")
-			if err != nil {
-				http.Error(w, "Errore nel caricare il template: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			
-			err = tmpl.Execute(w, nil)
-			if err != nil {
-				http.Error(w, "Errore nell'esecuzione del template: "+err.Error(), http.StatusInternalServerError)
-			}
-		}
-		
-
-		func main() {
-			// Gestisci le rotte
-			http.HandleFunc("/", homeHandler)
-			http.HandleFunc("/add", addHandler)
-			http.HandleFunc("/remove", removeHandler)
-			
-			
-		
-		// Avvia il server sulla porta 8080
-		fmt.Println("Server in esecuzione su http://localhost:8080")
-		err := http.ListenAndServe(":8080", nil)
-		if err != nil {
-			fmt.Println("Errore nell'avvio del server:", err)
-		}
+    // Avvia il server sulla porta 8080
+    fmt.Println("Server in esecuzione su http://localhost:8080")
+    err := http.ListenAndServe(":8080", nil)
+    if err != nil {
+        fmt.Println("Errore nell'avvio del server:", err)
+    }
 }

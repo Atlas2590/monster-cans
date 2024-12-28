@@ -4,70 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Collezione Lattine di Monster</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            padding: 20px;
-        }
-
-        h1 {
-            color: #333;
-        }
-
-        .container {
-            display: flex;
-            flex-wrap: wrap;
-        }
-
-        .item {
-            margin: 10px;
-            width: 200px;
-            background-color: #fff;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        img {
-            width: 100%;
-            height: auto;
-            border-radius: 8px;
-        }
-
-        .message {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
-        }
-
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        .button-container {
-            margin-bottom: 20px;
-        }
-
-        .button-container a {
-            padding: 10px 15px;
-            background-color: #4caf50;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin-right: 10px;
-        }
-
-        .button-container a:hover {
-            background-color: #45a049;
-        }
-    </style>
+    <link rel="stylesheet" href="../static/styles.css">
 </head>
 
 <body>
@@ -94,10 +31,15 @@
             <h2>{{.Name}}</h2>
             <p><strong>Gusto:</strong> {{.Flavor}}</p>
             <img src="{{.Image}}" alt="{{.Name}}">
-            <p><strong>Codice a Barre:</strong> {{.Barcode}}</p>
+            <form action="/" method="post" style="display: inline;">
+                <input type="hidden" name="barcode" value="{{.Barcode}}">
+                <button type="submit" name="remove" value="true">Rimuovi</button>
+            </form>
+            <!-- <p><strong>Codice a Barre:</strong> {{.Barcode}}</p> -->
         </div>
         {{end}}
     </div>
+    <a href="/add">Aggiungi una nuova lattina</a>
 </body>
 
 </html>
