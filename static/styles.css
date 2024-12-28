@@ -68,6 +68,7 @@ input[type="submit"]:hover {
 }
 
 .item {
+    position: relative;
     margin: 10px;
     width: 200px;
     background-color: #fff;
@@ -97,4 +98,52 @@ img {
 
 .button-container a:hover {
     background-color: #45a049;
+}
+
+.remove-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 25px;
+}
+
+.remove-button:hover {
+    background-color: #e53935;
+}
+
+.edit-button {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 25px;
+    text-decoration: none;
+}
+
+.edit-button:hover {
+    background-color: #1976d2;
+}
+
+form.remove-form {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
 }

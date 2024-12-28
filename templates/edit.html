@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Modifica una lattina</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+    <h1>Modifica una lattina</h1>
+
+    {{if .SuccessMessage}}
+    <div class="message success">{{.SuccessMessage}}</div>
+    {{end}}
+
+    {{if .ErrorMessage}}
+    <div class="message error">{{.ErrorMessage}}</div>
+    {{end}}
+
+    <form action="/edit?barcode={{.Can.Barcode}}" method="post" enctype="multipart/form-data">
+        <label for="name">Nome:</label><br>
+        <input type="text" id="name" name="name" value="{{.Can.Name}}" required><br><br>
+
+        <label for="flavor">Gusto:</label><br>
+        <input type="text" id="flavor" name="flavor" value="{{.Can.Flavor}}" required><br><br>
+
+        <label for="image">Immagine (upload):</label><br>
+        <input type="file" id="image" name="image" accept="image/*"><br><br>
+
+        <label for="barcode">Codice a barre:</label><br>
+        <input type="text" id="barcode" name="barcode" value="{{.Can.Barcode}}" required><br><br>
+
+        <input type="submit" value="Salva modifiche">
+    </form>
+</body>
+
+</html>
